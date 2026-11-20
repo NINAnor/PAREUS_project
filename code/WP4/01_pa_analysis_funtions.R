@@ -10,7 +10,7 @@
 
 
 ## ---- 1. Inputs ----------------------------------------------------------------
-site_crs <- function(site, lookup = c(TRD = 25833, FRA = 2154), default = 5514) {
+site_crs <- function(site, lookup = c(TRD = 25833, FRA_BAR2 = 2154, FRA = 2154, FRL04 = 2154, SVK = 5514), default = 3035)  {
   if (site %in% names(lookup)) unname(lookup[[site]]) else default
 }
 

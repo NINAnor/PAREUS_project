@@ -16,6 +16,7 @@ stud_site<-"FRA_BAR2"
 shared_dir = "data/shared"
 pu_size = 800
 stud_area <- sf::read_sf(file.path(shared_dir, paste0(stud_site, ".gpkg")))
+target_crs<-sf::st_crs(stud_area)
 
 source("code/WP4/01_pa_analysis_funtions.R")
 ## ---- Defaults ---------------------------------------------------------------
@@ -229,6 +230,7 @@ pu_reg <- pu_reg %>%
   )
 
 pu_reg_BAR<-pu_reg%>%filter(in_BAR == T)
+st_write(pu_reg_BAR, "outputs/WP4/03_pca_landscape/PCA_PU_FRA_BAR_REGIO.geojson", delete_dsn = TRUE)
 pu_reg_FRL<-pu_reg%>%filter(in_FRL04 == T)
 
 stats_FRL_reg<-pu_reg_FRL%>%group_by(lulc_name, pca)%>%

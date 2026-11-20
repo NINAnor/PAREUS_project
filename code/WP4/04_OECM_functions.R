@@ -662,3 +662,83 @@ run_pca_corridors <- function(
        corridor_km2 = sum(pu$area_km2[pu[[corridor_col]]]),
        path_km = sum(lcp$paths$length_km))
 }
+
+
+plot_pca_map<-function(pu,
+                       corePA_col = "core_pa_lulc",
+                       oecm_df,
+                       stud_area,
+                       scen,
+                       save_output = F
+){
+  dat <-pu
+  oecm<-oecm_df
+  core_pa <- dat %>% filter(!.data[[corePA_col]] %in% c("not protected","other protected areas"))%>%mutate(pca = .data[[corePA_col]])
+  
+  other_pa<-dat %>% filter(.data[[corePA_col]]=="other protected areas")%>%mutate(pca = "Other PA (IUCN III-VI)")
+  
+  # oecm$pca <- ifelse(oecm$n_pa > 0, "Other PA (IUCN III-VI) high suitability for OECM", "High OECM suitability not protected - potential OECM")
+  oecm$pca <- ifelse(
+    oecm[[corePA_col]] == "other protected areas",
+    "Other PA (IUCN III-VI) high suitability for OECM",
+    "High OECM suitability not protected - potential OECM"
+  )
+  
+  ## other pa, remove ids from OECM
+  no_oecm_pa <- other_pa[!other_pa$id %in% oecm$id, ]
+  
+  other<-dat %>% filter(.data[[corePA_col]] == "not protected")%>%mutate(pca = "not protected")
+  #also here remove OECMs
+  other <- other[!other$id %in% oecm$id, ]
+  
+  
+  pu_pca<-rbind(other,oecm,no_oecm_pa,core_pa)
+  pu_pca<-pu_pca
+  
+  
+  
+  stats<-pu_pca%>%group_by(pca,lulc_name)%>%summarise(area = sum(area))%>%st_drop_geometry()%>%mutate(scenario = scen)
+  
+  total<-dat%>%group_by(lulc_name)%>%summarise(area = sum(area))%>%st_drop_geometry()%>%mutate(scenario = scen)
+  
+  ############
+  p<-ggplot() +
+    # Layer 0: other pa
+    geom_sf(data = pu_pca%>%filter(pca != "not protected"),
+            aes(fill = pca),
+            color = NA) +
+    scale_fill_manual(
+      values = c(    "existing core pa" = "#00A300",
+                     "new core PA" = "#bf8bff",
+                     "proposed upgrade existing PA" = "#e5d0ff",
+                     "Other PA (IUCN III-VI) high suitability for OECM" = "#44a6c6",
+                     "High OECM suitability not protected - potential OECM" = "#194553",
+                     "Other PA (IUCN III-VI)" = "#ADD8E6"),
+      name = NULL
+    )  +
+    geom_sf(
+      data = pu%>%filter(lulc_name == "built-up"),
+      aes(fill = lulc_name),
+      color = "grey", fill="grey"  )+
+    
+    new_scale_fill() +
+    # stud area
+    geom_sf(data = stud_area, fill = NA, color = "black") +
+    theme_minimal()+
+    
+    theme(legend.position="bottom")+
+    ggtitle(scen)
+  
+  if(save_output == T){
+    st_write(pu_pca,paste0("outputs/WP4/03_pca_landscape/PCA_PU_",stud_site,"_",scen,".geojson"))
+    ggsave(paste0("outputs/WP4/03_pca_landscape/PCA_PU_",stud_site,"_",scen,".png"),p)
+  }
+  
+  list(
+    plot = p,
+    stats = stats,
+    total_area = total,
+    pu = pu_pca
+  )
+  
+}
