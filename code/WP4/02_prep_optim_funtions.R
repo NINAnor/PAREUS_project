@@ -1,9 +1,8 @@
 ##02_prep_optim_funtions
 
 # Packages: sf, terra
-# External (wp4_functions_utils.R): min_max_normalize(), zero_one_scale()
+source("code/WP4/wp4_functions_utils.R")  # fill_path(), min_max_normalize(), zero_one_scale()
 
-fill_path <- function(template, site) gsub("{site}", site, template, fixed = TRUE)
 
 ## ---- 1. Feature layers -----------------------------------------------------
 load_es_means <- function(site, es_dir, es_groups, na_rm = FALSE, normalize = TRUE) {
@@ -142,50 +141,6 @@ clean_features <- function(grid, cols, na_action = c("drop", "neighbour_mean"),
   out <- grid[!drop, ]
   attr(out, "dropped_ids") <- if ("id" %in% names(grid)) grid$id[drop] else which(drop)
   out
-}
-
-#scale
-zero_one_scale <- function(sf_df, cols = NULL, na.rm = TRUE) {
-  
-  # If no columns specified: use all numeric columns
-  if (is.null(cols)) {
-    cols <- sf_df %>%
-      st_drop_geometry() %>%
-      select(where(is.numeric)) %>%
-      names()
-  }
-  
-  sf_df %>%
-    mutate(
-      across(
-        all_of(cols),
-        .fns = function(x) {
-          
-          min_x <- min(x, na.rm = na.rm)
-          max_x <- max(x, na.rm = na.rm)
-          rng   <- max_x - min_x
-          
-          if (rng == 0) {
-            return(rep(0, length(x)))
-          } else {
-            return((x - min_x) / rng)
-          }
-        },
-        .names = "{.col}_scaled"
-      )
-    )
-}
-
-#normalize
-min_max_normalize <- function(r) {
-  # Normalize each layer individually
-  norm_r <- lapp(r, function(x) {
-    r_min <- min(x, na.rm = TRUE)
-    r_max <- max(x, na.rm = TRUE)
-    (x - r_min) / (r_max - r_min)
-  })
-  return(norm_r)
-  
 }
 
 ## ---- 5. Output ---------------------------------------------------------------------

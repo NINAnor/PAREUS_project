@@ -5,14 +5,12 @@
 ############################################################################
 
 # Packages: sf, terra, dplyr, tidyr, ggplot2, scales
+source("code/WP4/wp4_functions_utils.R")  # site_crs(), default_* lookups
 
 
 
 
 ## ---- 1. Inputs ----------------------------------------------------------------
-site_crs <- function(site, lookup = c(TRD = 25833, FRA_BAR2 = 2154, FRA = 2154, FRL04 = 2154, SVK = 5514), default = 3035)  {
-  if (site %in% names(lookup)) unname(lookup[[site]]) else default
-}
 
 read_site_inputs <- function(site, shared_dir = "data/shared", pa_dir = "data/WP4",
                              crs = site_crs(site)) {

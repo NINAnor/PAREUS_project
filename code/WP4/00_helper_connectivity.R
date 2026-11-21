@@ -1,3 +1,5 @@
+# Pareus WP4 - moving-window connectivity layer (circuitscape) per study site
+# Output: outputs/WP4/02_optim/conn_<site>.tif, used as feature in 02-04
 library(circuitscaper)
 #cs_install_julia()
 Sys.which("julia")

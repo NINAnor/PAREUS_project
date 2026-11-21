@@ -1,3 +1,11 @@
+############################################################################
+# Pareus WP4 - Case study TRD (Trondheim, Norway)
+# Workflow (uses the streamlined function files 00-04 + wp4_functions_utils.R):
+#   00 connectivity layer -> 01 PA gap analysis -> 02 prepare optimisation grid
+#   -> 03 PA optimisation (nature scenario, LULC + global) -> 04 OECM / PCA corridors
+# Inputs: data/shared/TRD.gpkg, data/WP2/TRD, data/WP3, data/WP4
+# Outputs: outputs/WP4/01_PA_analysis, 02_optim, 03_pca_landscape
+############################################################################
 #### PCA TRD
 
 library(prioritizr)
@@ -11,19 +19,8 @@ stud_site<-"TRD"
 shared_dir = "data/shared"
 pu_size = 350
 stud_area <- sf::read_sf(file.path(shared_dir, paste0(stud_site, ".gpkg")))
+source("code/WP4/wp4_functions_utils.R")
 source("code/WP4/01_pa_analysis_funtions.R")
-## ---- Defaults ---------------------------------------------------------------
-default_iucn_rank <- c(
-  "Not Applicable" = 1, "Not Assigned" = 1, "Not Reported" = 1,
-  "VI" = 2, "V" = 3, "IV" = 4, "III" = 5, "II" = 6, "Ib" = 7, "Ia" = 8
-)
-default_lulc_names <- c("1" = "built-up", "2" = "agricultural", "3" = "forest",
-                        "4" = "wetland", "5" = "water")
-default_iucn_colours <- c(
-  "Ia" = "#00A300", "Ib" = "#007A00", "II" = "#00FF00",
-  "III" = "#804FB3", "IV" = "#9969C7", "V" = "#B589D6", "VI" = "#CDB4E6",
-  "Not Applicable" = "#F1EE8D", "Not Assigned" = "#F1EE8D", "Not Reported" = "#F1EE8D"
-)
 
 out <- "outputs/WP4/01_PA_analysis"
 

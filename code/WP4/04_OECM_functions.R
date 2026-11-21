@@ -1,4 +1,6 @@
 ### OECM functions
+# Uses wp4_functions_utils.R (zero_one_scale()) and write_grid()/summarise_area()
+source("code/WP4/wp4_functions_utils.R")
 
 oecm_lin_w<-function(cult_es,prov_es,ec,conn,w_cult,w_prov,w_ec,w_connect){
   weighted_sum <- cult_es * w_cult +

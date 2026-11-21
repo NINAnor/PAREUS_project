@@ -1,13 +1,9 @@
 # Packages: sf, prioritizr, dplyr, ggplot2
 # Uses write_grid() from the previous step
+source("code/WP4/wp4_functions_utils.R")  # pa_levels, pa_cols, scale01()
 # Gap table columns: lulc_name, target_area (m2), protected_area, gap_area
 
 ## ---- 0. Defaults --------------------------------------------------------------
-pa_levels <- c("existing core pa", "new core PA", "proposed upgrade existing PA",
-               "other protected areas", "not protected")
-pa_cols <- c("existing core pa" = "#00A300", "new core PA" = "#bf8bff",
-             "proposed upgrade existing PA" = "#e5d0ff",
-             "other protected areas" = "#ADD8E6", "not protected" = "#1A1A1A")
 
 
 
@@ -81,12 +77,6 @@ pa_optim <- function(pu, features, area_budget,
 }
 
 ## ---- 2. Features ------------------------------------------------------------------
-scale01 <- function(x) {
-  r <- range(x, na.rm = TRUE)
-  if (diff(r) == 0) return(rep(0, length(x)))
-  (x - r[1]) / diff(r)
-}
-
 add_distance_scaled <- function(pu, transform = c("linear", "log", "rank"), col = "min_distance") {
   transform <- match.arg(transform)
   stopifnot(col %in% names(pu))

@@ -1,3 +1,12 @@
+############################################################################
+# Pareus WP4 - Case study France (FRA department; FRL04 and BAR are sub-areas)
+# Workflow (uses the streamlined function files 01-04 + wp4_functions_utils.R):
+#   01 PA gap analysis -> 02 prepare optimisation grid -> 03 global PA
+#   optimisation at regional scale -> 04 OECM / PCA corridors, comparing regional
+#   protection with local (FRL04, BAR) statistics
+# Inputs: data/shared/FRA_BAR2.gpkg, data/WP2, data/WP3, data/WP4
+# Outputs: outputs/WP4/01_PA_analysis, 02_optim, 03_pca_landscape
+############################################################################
 ##FRL04 and FRA_BAR are the smaller areas
 library(prioritizr)
 library(ggplot2)
@@ -18,19 +27,8 @@ pu_size = 800
 stud_area <- sf::read_sf(file.path(shared_dir, paste0(stud_site, ".gpkg")))
 target_crs<-sf::st_crs(stud_area)
 
+source("code/WP4/wp4_functions_utils.R")
 source("code/WP4/01_pa_analysis_funtions.R")
-## ---- Defaults ---------------------------------------------------------------
-default_iucn_rank <- c(
-  "Not Applicable" = 1, "Not Assigned" = 1, "Not Reported" = 1,
-  "VI" = 2, "V" = 3, "IV" = 4, "III" = 5, "II" = 6, "Ib" = 7, "Ia" = 8
-)
-default_lulc_names <- c("1" = "built-up", "2" = "agricultural", "3" = "forest",
-                        "4" = "wetland", "5" = "water")
-default_iucn_colours <- c(
-  "Ia" = "#00A300", "Ib" = "#007A00", "II" = "#00FF00",
-  "III" = "#804FB3", "IV" = "#9969C7", "V" = "#B589D6", "VI" = "#CDB4E6",
-  "Not Applicable" = "#F1EE8D", "Not Assigned" = "#F1EE8D", "Not Reported" = "#F1EE8D"
-)
 
 out <- "outputs/WP4/01_PA_analysis"
 
@@ -170,17 +168,6 @@ area_FRA <- sf::read_sf(file.path(shared_dir, paste0(region, ".gpkg")))%>%st_tra
 
 
 ### plot IUCN region with counties
-default_iucn_rank <- c(
-  "Not Applicable" = 1, "Not Assigned" = 1, "Not Reported" = 1,
-  "VI" = 2, "V" = 3, "IV" = 4, "III" = 5, "II" = 6, "Ib" = 7, "Ia" = 8
-)
-default_lulc_names <- c("1" = "built-up", "2" = "agricultural", "3" = "forest",
-                        "4" = "wetland", "5" = "water")
-default_iucn_colours <- c(
-  "Ia" = "#00A300", "Ib" = "#007A00", "II" = "#00FF00",
-  "III" = "#804FB3", "IV" = "#9969C7", "V" = "#B589D6", "VI" = "#CDB4E6",
-  "Not Applicable" = "#F1EE8D", "Not Assigned" = "#F1EE8D", "Not Reported" = "#F1EE8D"
-)
 
 a<-ggplot2::ggplot() +
   ggplot2::geom_sf(data = pu_reg, ggplot2::aes(fill = .data$IUCN_CAT), colour = NA) +
@@ -198,11 +185,6 @@ ggplot2::ggsave(file.path(out, "FRA_all_iucn.png"), a,
 ## gap for all three areas core PA to reach 10% as tables
 
 ## PU optim global with counties
-pa_levels <- c("existing core pa", "new core PA", "proposed upgrade existing PA",
-               "other protected areas", "not protected")
-pa_cols <- c("existing core pa" = "#00A300", "new core PA" = "#bf8bff",
-             "proposed upgrade existing PA" = "#e5d0ff",
-             "other protected areas" = "#ADD8E6", "not protected" = "#1A1A1A")
 show <- c(pa_cols[1:3], "other protected areas" = "transparent", "not protected" = "transparent")
 class_col="core_pa_global"
 a<-ggplot2::ggplot() +
@@ -344,7 +326,6 @@ fill_values = c(  "existing core pa" = "#00A300",
                   "Other PA (IUCN III-VI)" = "#ADD8E6",
                   "not protected" = "#999999"
 )
-source("code/WP4/04_OECM_functions.R")
 ggplot2::ggsave("outputs/WP4/03_pca_landscape/TRD_pie_pca.png",
                 plot_area_pies(stats_all, value_col       = "area",
                                scenario_col    = "optim_scenario", slice_col = "pca", label = "pct", keep_slices = NULL, 
