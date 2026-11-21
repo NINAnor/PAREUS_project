@@ -1,137 +1,89 @@
-## calculate core protection gap
+############################################################################
+# Pareus WP4 - shared utilities
+# Single home for helpers and constants used by 00-04 function files and the
+# case scripts (TRD_case.R, SK021_case.R, FR_case.R). Source this file first;
+# the 01-04 function files do so themselves. Packages: sf, terra, dplyr
+############################################################################
 
+if (!exists(".wp4_utils_loaded")) {
+.wp4_utils_loaded <- TRUE
 
+## ---- 1. Constants ------------------------------------------------------------
+default_iucn_rank <- c(
+  "Not Applicable" = 1, "Not Assigned" = 1, "Not Reported" = 1,
+  "VI" = 2, "V" = 3, "IV" = 4, "III" = 5, "II" = 6, "Ib" = 7, "Ia" = 8
+)
+default_lulc_names <- c("1" = "built-up", "2" = "agricultural", "3" = "forest",
+                        "4" = "wetland", "5" = "water")
+default_iucn_colours <- c(
+  "Ia" = "#00A300", "Ib" = "#007A00", "II" = "#00FF00",
+  "III" = "#804FB3", "IV" = "#9969C7", "V" = "#B589D6", "VI" = "#CDB4E6",
+  "Not Applicable" = "#F1EE8D", "Not Assigned" = "#F1EE8D", "Not Reported" = "#F1EE8D"
+)
+pa_levels <- c("existing core pa", "new core PA", "proposed upgrade existing PA",
+               "other protected areas", "not protected")
+pa_cols <- c("existing core pa" = "#00A300", "new core PA" = "#bf8bff",
+             "proposed upgrade existing PA" = "#e5d0ff",
+             "other protected areas" = "#ADD8E6", "not protected" = "#1A1A1A")
 
-
-
-# pa_optim <- function(
-#     pu,
-#     target_lulc = NULL,
-#     lockout = NULL,
-#     lockin_col,
-#     features,
-#     area_budget
-# ) {
-#   
-#   # Filter out lockout classes
-#   if (!is.null(lockout)) {
-#     pu <- pu %>%
-#       filter(!(.data$lulc_name %in% lockout))
-#   }
-#   
-#   # Filter target LULC
-#   if (!is.null(target_lulc)) {
-#     pu <- pu %>%
-#       filter(.data$lulc_name == target_lulc)
-#   }
-#   
-#   # Nothing to optimize
-#   if (nrow(pu) == 0) {
-#     return(NULL)
-#   }
-#   
-#   pa_problem <- problem(
-#     pu,
-#     features = features,
-#     cost_column = "area_km2"
-#   ) %>%
-#     add_max_utility_objective(budget = area_budget) %>%
-#     add_boundary_penalties(penalty = 0.0005) %>%
-#     add_binary_decisions()
-#   
-#   if (lockin_col %in% names(pu) &&
-#       any(pu[[lockin_col]], na.rm = TRUE)) {
-#     pa_problem <- pa_problem %>%
-#       add_locked_in_constraints(lockin_col)
-#   }
-#   
-#   solve(pa_problem) %>%
-#     filter(solution_1 == 1)
-# }
-
-####V2 optim
-pa_optim <- function(
-    pu,
-    features,
-    area_budget,
-    lockin_col       = NULL,
-    target_lulc      = NULL,
-    lockout          = NULL,
-    boundary_penalty,
-    gap              = 0.01,
-    time_limit       = 600
-) {
-  stopifnot(
-    inherits(pu, "sf"),
-    is.numeric(area_budget), area_budget > 0,
-    all(c("area_km2", "lulc_name", features) %in% names(pu))
-  )
-  if (anyNA(sf::st_drop_geometry(pu)[features])) stop("NA in feature columns")
-  
-  # Lock-in flag (existing PAs)
-  if (!is.null(lockin_col)) {
-    if (!lockin_col %in% names(pu)) stop("lockin_col not found in pu")
-    if (anyNA(pu[[lockin_col]]))    stop("lockin_col contains NA")
-    locked <- as.logical(pu[[lockin_col]])
-  } else {
-    locked <- rep(FALSE, nrow(pu))
-  }
-  
-  # Filters apply to candidate cells only; existing PAs are kept
-  # so that boundary penalties still see them as neighbours
-  cand <- rep(TRUE, nrow(pu))
-  if (!is.null(lockout))     cand <- cand & !(pu$lulc_name %in% lockout)
-  if (!is.null(target_lulc)) cand <- cand &  (pu$lulc_name %in% target_lulc)
-  
-  keep   <- cand | locked
-  pu     <- pu[keep, ]
-  locked <- locked[keep]
-  
-  if (!any(!locked)) return(NULL)  # nothing left to optimise
-  
-  # Neutralise existing PAs: no cost, no feature contribution
-  pu$cost_km2 <- ifelse(locked, 0, pu$area_km2)
-  for (f in features) pu[[f]][locked] <- 0
-  pu$.is_lockin <- locked
-  
-  p <- prioritizr::problem(pu, features = features, cost_column = "cost_km2") |>
-    prioritizr::add_max_utility_objective(budget = area_budget) |>
-    prioritizr::add_binary_decisions() |>
-    prioritizr::add_default_solver(gap = gap, time_limit = time_limit,
-                                   verbose = FALSE)
-  
-  if (boundary_penalty > 0) {
-    p <- prioritizr::add_boundary_penalties(p, penalty = boundary_penalty)
-  }
-  if (any(locked)) {
-    p <- prioritizr::add_locked_in_constraints(p, ".is_lockin")
-  }
-  
-  s <- solve(p)
-  
-  # Return only NEW selections
-  s[s$solution_1 == 1 & !s$.is_lockin, ]
+## ---- 2. Helpers --------------------------------------------------------------
+# projected CRS (EPSG) per study site
+site_crs <- function(site, lookup = c(TRD = 25833, FRA_BAR2 = 2154, FRA = 2154, FRL04 = 2154, SVK = 5514), default = 3035)  {
+  if (site %in% names(lookup)) unname(lookup[[site]]) else default
 }
 
-###
-classify_pa <- function(pu, new_ids) {
-  new <- pu$id %in% new_ids
-  factor(
-    dplyr::case_when(
-      pu$existing_corePA     ~ "existing core pa",
-      new & pu$n_pa == 0     ~ "new core PA",
-      new & pu$n_pa  > 0     ~ "proposed upgrade existing PA",
-      pu$n_pa > 0            ~ "other protected areas",
-      TRUE                   ~ "not protected"
-    ),
-    levels = pa_levels
-  )
+# fill "{site}" placeholder in a path template
+fill_path <- function(template, site) gsub("{site}", site, template, fixed = TRUE)
+
+# rescale a numeric vector to 0-1
+scale01 <- function(x) {
+  r <- range(x, na.rm = TRUE)
+  if (diff(r) == 0) return(rep(0, length(x)))
+  (x - r[1]) / diff(r)
 }
 
+# rescale columns of an sf/data.frame to 0-1 (adds "<col>_scaled")
+zero_one_scale <- function(sf_df, cols = NULL, na.rm = TRUE) {
+  
+  # If no columns specified: use all numeric columns
+  if (is.null(cols)) {
+    cols <- sf_df %>%
+      st_drop_geometry() %>%
+      select(where(is.numeric)) %>%
+      names()
+  }
+  
+  sf_df %>%
+    mutate(
+      across(
+        all_of(cols),
+        .fns = function(x) {
+          
+          min_x <- min(x, na.rm = na.rm)
+          max_x <- max(x, na.rm = na.rm)
+          rng   <- max_x - min_x
+          
+          if (rng == 0) {
+            return(rep(0, length(x)))
+          } else {
+            return((x - min_x) / rng)
+          }
+        },
+        .names = "{.col}_scaled"
+      )
+    )
+}
 
+# rescale each raster layer to 0-1
+min_max_normalize <- function(r) {
+  # Normalize each layer individually
+  norm_r <- lapp(r, function(x) {
+    r_min <- min(x, na.rm = TRUE)
+    r_max <- max(x, na.rm = TRUE)
+    (x - r_min) / (r_max - r_min)
+  })
+  return(norm_r)
+  
+}
 
-
-
-
-
-
+}

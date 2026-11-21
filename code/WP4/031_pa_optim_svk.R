@@ -1,3 +1,5 @@
+# Legacy stand-alone SVK optimisation script; superseded by SK021_case.R
+# (kept working on top of the streamlined 03 functions)
 ### PA_optim SVK
 
 library(prioritizr)
@@ -6,6 +8,7 @@ library(sf)
 library(terra)
 library(dplyr)
 source("code/WP4/wp4_functions_utils.R")
+source("code/WP4/03_pa_optim_functions.R")  # pa_optim(), classify_pa()
 target_site<-"SK021"
 
 scenario<-"nature"# "nature" "multifunctional"
@@ -81,8 +84,6 @@ pu <- pu %>%
 names(pu)[names(pu) == "solution_1"] <- "optim_PA_global_agri"
 
 ## classify the different areas old and new core PAs
-pa_levels <- c("existing core pa", "new core PA", "proposed upgrade existing PA",
-               "other protected areas", "not protected")
 
 
 pu$optim_PA_global      <- pu$id %in% core_pa_global$id
