@@ -29,8 +29,8 @@ res <- analyse_pa_gap(x2, global_target = 0.1,
 #### 2. prep optimization
 source("code/WP4/02_prep_optim_funtions.R")
 op <- prepare_optim_grid(stud_site, na_action = "neighbour_mean", skip_missing = TRUE,     layer_files  = c(
-  eco_cond    = "data/WP2/{site}/int.tif",
-  cost_policy = "data/WP3/pol_resistance_{site}.tif"
+  eco_cond    = "data/WP2/{site}_ECSI.tif",
+  cost_policy = "data/WP3/output/pol_resistance_{site}.tif"
 ))
 
 ### 3. optim PA

@@ -24,8 +24,7 @@ library(ahpsurvey)
 ################################
 
 # 1. Read all sheets
-country <- "France" # Norway, Slovakia, France
-
+country <- "FRA" # NOR, SK021, 
 esnms <- read_excel("data/WP3/PCA_info.xlsx", sheet = "esnames")
 plannms <- read_excel("data/WP3/PCA_info.xlsx", sheet = "plannames")
 plannms <- subset(plannms,Country==country)

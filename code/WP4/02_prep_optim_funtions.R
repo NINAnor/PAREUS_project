@@ -161,16 +161,15 @@ prepare_optim_grid <- function(
     grid         = NULL,                      # sf from build_pa_grid(); if NULL it is read from grid_dir
     grid_dir     = "outputs/WP4/01_PA_analysis",
     out_dir      = "outputs/WP4/02_optim",
-    es_dir       = "data/WP2/{site}/es_all",
+    es_dir       = "data/WP2/es_all/{site}",
     es_groups    = list(                      # names become layer names (es_prov, ...)
       es_prov = c("wild_plant", "wild_hunt", "farm", "mat"),
       es_reg  = c("erosion", "flood", "habitat"),
       es_cult = c("aest", "recr", "sense")
     ),
     layer_files  = c(
-      eco_cond    = "data/WP2/{site}/int.tif",
-      cost_policy = "data/WP3/pol_resistance_{site}.tif",
-      ghm         = "data/WP4/{site}_GHM.tif"
+      eco_cond    = "data/WP2/{site}_ECSI.tif",
+      cost_policy = "data/WP3/output/pol_resistance_{site}.tif"
     ),
     es_na_rm       = FALSE,
     normalize_es   = TRUE,
